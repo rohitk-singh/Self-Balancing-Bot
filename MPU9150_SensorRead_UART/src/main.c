@@ -29,55 +29,6 @@ uint8_t ConfigureUART(void);
 uint8_t ConfigureSystem(void);
 uint8_t ConfigureI2C(void);
 
-uint8_t ConfigureSystem(void)
-{
-
-	// System clocks
-	ROM_SysCtlClockSet(SYSCTL_SYSDIV_4|SYSCTL_USE_PLL|SYSCTL_XTAL_16MHZ|SYSCTL_OSC_MAIN);
-
-	// Enable Clock gating to GPIO_F
-	ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-
-	// COnfigure GPIO pins for RGB LED
-	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, LED_RED|LED_BLUE|LED_GREEN);
-
-	return 0;
-}
-
-uint8_t ConfigureUART(void)
-{
-	//
-	// Enable the GPIO Peripheral used by the UART.
-	//
-	ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-
-	//
-	// Enable UART0
-	//
-	ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-
-	//
-	// Configure GPIO Pins for UART mode.
-	//
-	ROM_GPIOPinConfigure(GPIO_PA0_U0RX);
-	ROM_GPIOPinConfigure(GPIO_PA1_U0TX);
-	ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-
-	//
-	// Use the internal 16MHz oscillator as the UART clock source.
-	//
-	UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
-
-	//
-	// Initialize the UART for console I/O. Speed: 115200
-	//
-	UARTStdioConfig(0, 115200, 16000000);
-
-	UARTprintf("\nUART Initialized, Speed: 115200");
-
-	return 0;
-}
-
 int main()
 {
 	ConfigureSystem();
@@ -86,11 +37,10 @@ int main()
 	MPU9150.address = 0x68;
 
 	ConfigureI2C();
-	uint16_t x,y,z;
+	//uint16_t x,y,z;
 
 	MPU9150.init();
 	UARTprintf("\nTest read: 0x%x", MPU9150.read(0x75));
-	//MPU9150.write(0x33, 0x68);
 
 	for (;;) {
 		#ifdef DEBUG_LEVEL2
@@ -98,7 +48,16 @@ int main()
 		#endif
 
 		MPU9150.getRawAccelData();
-		UARTprintf("\nX2: %d, Y2: %d, Z2: %d", MPU9150.ui16_rawAccel[0], MPU9150.ui16_rawAccel[1], MPU9150.ui16_rawAccel[2]);
+		UARTprintf("\nRaw Unsigned -> X: %6d, Y: %6d, Z: %6d",
+						MPU9150.ui16_rawAccel[0],
+						MPU9150.ui16_rawAccel[1],
+						MPU9150.ui16_rawAccel[2]);
+
+		UARTprintf("\nRaw Signed   -> X: %6d, Y: %6d, Z: %6d",
+						MPU9150.i16_rawAccel[0],
+						MPU9150.i16_rawAccel[1],
+						MPU9150.i16_rawAccel[2]);
+
 
 		// set the red LED pin high, others low
 		ROM_GPIOPinWrite(GPIO_PORTF_BASE, LED_RED|LED_GREEN|LED_BLUE, LED_RED|LED_BLUE);
@@ -145,5 +104,53 @@ uint8_t ConfigureI2C(void)
 	//
 	ROM_I2CMasterInitExpClk(I2C0_BASE, SysCtlClockGet(), false);
 	UARTprintf("\nI2C Initialized, Peripheral: I2C0, Pins: PB2 -> SCL, PB3 -> SDA");
+	return 0;
+}
+uint8_t ConfigureSystem(void)
+{
+
+	// System clocks
+	ROM_SysCtlClockSet(SYSCTL_SYSDIV_4|SYSCTL_USE_PLL|SYSCTL_XTAL_16MHZ|SYSCTL_OSC_MAIN);
+
+	// Enable Clock gating to GPIO_F
+	ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+
+	// COnfigure GPIO pins for RGB LED
+	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, LED_RED|LED_BLUE|LED_GREEN);
+
+	return 0;
+}
+
+uint8_t ConfigureUART(void)
+{
+	//
+	// Enable the GPIO Peripheral used by the UART.
+	//
+	ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+
+	//
+	// Enable UART0
+	//
+	ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+
+	//
+	// Configure GPIO Pins for UART mode.
+	//
+	ROM_GPIOPinConfigure(GPIO_PA0_U0RX);
+	ROM_GPIOPinConfigure(GPIO_PA1_U0TX);
+	ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+
+	//
+	// Use the internal 16MHz oscillator as the UART clock source.
+	//
+	UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
+
+	//
+	// Initialize the UART for console I/O. Speed: 115200
+	//
+	UARTStdioConfig(0, 115200, 16000000);
+
+	UARTprintf("\nUART Initialized, Speed: 115200, Peripheral: UART0, Pins: PA0 -> RX, PA1 -> TX");
+
 	return 0;
 }

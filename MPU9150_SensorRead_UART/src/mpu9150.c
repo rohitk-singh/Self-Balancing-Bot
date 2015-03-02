@@ -293,9 +293,10 @@ uint8_t MPU9150GetRawAccelData(void)
 
 	uint8_t i = 0x00;
 
+	I2CMasterSlaveAddrSet(I2C0_BASE, MPU9150.address, true);
+
 	for(i=0; i<6; i++)
 	{
-		I2CMasterSlaveAddrSet(I2C0_BASE, MPU9150.address, true);
 		if (i==0)
 		{
 			I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_RECEIVE_START);
@@ -359,12 +360,126 @@ uint8_t MPU9150GetRawAccelData(void)
 	{
 		MPU9150.ui16_rawAccel[i] = MPU9150.ui8_rawAccel[i << 1] << 8;
 		MPU9150.ui16_rawAccel[i] += MPU9150.ui8_rawAccel[(i << 1) + 1];
+
+		MPU9150.i16_rawAccel[i] = (int16_t)MPU9150.ui8_rawAccel[i << 1];
+		MPU9150.i16_rawAccel[i] <<= 8;
+		MPU9150.i16_rawAccel[i] += MPU9150.ui8_rawAccel[(i << 1) + 1];
+
 	}
 	return 0;
 }
 
 uint8_t MPU9150GetRawGyroData(void)
 {
-	UARTprintf("\nGyro Data: ");
+	I2CMasterSlaveAddrSet(I2C0_BASE, MPU9150.address, false);
+	I2CMasterDataPut(I2C0_BASE, MPU9150.gyroRegBaseAdd);
+	I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_SEND);
+
+	while(I2CMasterBusy(I2C0_BASE));
+
+	#ifdef DEBUG_I2C
+	switch(I2CMasterErr(I2C0_BASE))
+	{
+	case I2C_MASTER_ERR_ADDR_ACK:
+		UARTprintf("\nI2C_MASTER_ERR_ADDR_ACK");
+		return 0;
+
+	case I2C_MASTER_ERR_DATA_ACK:
+		UARTprintf("\nI2C_MASTER_ERR_DATA_ACK");
+		return 0;
+
+	case I2C_MASTER_ERR_ARB_LOST:
+		UARTprintf("\nI2C_MASTER_ERR_ARB_LOST");
+		return 0;
+
+	case I2C_MASTER_ERR_NONE:
+		UARTprintf("\nI2C_MASTER_ERR_NONE");
+		break;
+
+	default:
+		UARTprintf("\nUnknown I2C Error");
+	}
+	#else
+	ui32_temp = I2CMasterErr(I2C0_BASE);
+	if (ui32_temp != I2C_MASTER_ERR_NONE){
+		UARTprintf("\nI2C_MASTER_ERR_XXXX: 0x%x", ui32_temp);
+		return 0;
+	}
+	#endif
+
+	uint8_t i = 0x00;
+
+	I2CMasterSlaveAddrSet(I2C0_BASE, MPU9150.address, true);
+
+	for(i=0; i<6; i++)
+	{
+		if (i==0)
+		{
+			I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_RECEIVE_START);
+		}
+		else if (i==5)
+		{
+			I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_RECEIVE_FINISH);
+		}
+		else
+		{
+			I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_RECEIVE_CONT);
+		}
+
+		while(I2CMasterBusy(I2C0_BASE));
+
+#ifdef DEBUG_I2C
+		switch(I2CMasterErr(I2C0_BASE))
+		{
+		case I2C_MASTER_ERR_ADDR_ACK:
+			UARTprintf("\nI2C_MASTER_ERR_ADDR_ACK");
+			I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_RECEIVE_ERROR_STOP);
+			return 0;
+
+		case I2C_MASTER_ERR_DATA_ACK:
+			UARTprintf("\nI2C_MASTER_ERR_DATA_ACK");
+			I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_RECEIVE_ERROR_STOP);
+			return 0;
+
+		case I2C_MASTER_ERR_ARB_LOST:
+			UARTprintf("\nI2C_MASTER_ERR_ARB_LOST");
+			I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_RECEIVE_ERROR_STOP);
+			return 0;
+
+		case I2C_MASTER_ERR_NONE:
+			UARTprintf("\nI2C_MASTER_ERR_NONE");
+			break;
+
+		default:
+			UARTprintf("\nUnknown I2C Error");
+		}
+#else
+		ui32_temp = I2CMasterErr(I2C0_BASE);
+		if (ui32_temp != I2C_MASTER_ERR_NONE)
+		{
+			UARTprintf("\nI2C_MASTER_ERR_XXXX: 0x%x", ui32_temp);
+			I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_RECEIVE_ERROR_STOP);
+			return 0;
+		}
+#endif
+
+		MPU9150.ui8_rawGyro[i] = I2CMasterDataGet(I2C0_BASE);
+		#ifdef DEBUG_MPU9150
+		UARTprintf("\n\tRead  -> Register: 0x%x, Value: 0x%x",
+						MPU9150.gyroRegBaseAdd + i,
+						MPU9150.ui8_rawGyro[i]);
+		#endif
+
+	}
+
+	for (i = 0; i < 3; i++)
+	{
+		MPU9150.ui16_rawGyro[i] = MPU9150.ui8_rawGyro[i << 1] << 8;
+		MPU9150.ui16_rawGyro[i] += MPU9150.ui8_rawGyro[(i << 1) + 1];
+
+		MPU9150.i16_rawGyro[i] = (int16_t)MPU9150.ui8_rawGyro[i << 1];
+		MPU9150.i16_rawGyro[i] <<= 8;
+		MPU9150.i16_rawGyro[i] += MPU9150.ui8_rawGyro[(i << 1) + 1];
+	}
 	return 0;
 }
