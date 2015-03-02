@@ -96,18 +96,6 @@ int main()
 		#ifdef DEBUG_LEVEL2
 		UARTprintf("\nLED Loop");
 		#endif
-		x = MPU9150.read(59);
-		x = x<<8;
-		x = x + MPU9150.read(60);
-
-		y = MPU9150.read(61);
-		y = y<<8;
-		y = y + MPU9150.read(62);
-
-		z = MPU9150.read(63);
-		z = z<<8;
-		z = z + MPU9150.read(64);
-		UARTprintf("\nX1: %d, Y1: %d, Z1: %d", x, y, z);
 
 		MPU9150.getRawAccelData();
 		UARTprintf("\nX2: %d, Y2: %d, Z2: %d", MPU9150.ui16_rawAccel[0], MPU9150.ui16_rawAccel[1], MPU9150.ui16_rawAccel[2]);
@@ -156,6 +144,6 @@ uint8_t ConfigureI2C(void)
 	// be set to 400kbps.  For this example we will use a data rate of 100kbps.
 	//
 	ROM_I2CMasterInitExpClk(I2C0_BASE, SysCtlClockGet(), false);
-
+	UARTprintf("\nI2C Initialized, Peripheral: I2C0, Pins: PB2 -> SCL, PB3 -> SDA");
 	return 0;
 }
