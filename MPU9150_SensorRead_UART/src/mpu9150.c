@@ -36,7 +36,9 @@ _MPU9150 MPU9150 = {
 		.read = MPU9150Read,
 		.write = MPU9150Write,
 		.getRawAccelData = MPU9150GetRawAccelData,
-		.getRawGyroData = MPU9150GetRawGyroData
+		.getRawGyroData = MPU9150GetRawGyroData,
+		.getFloatAccelData = MPU9150GetFloatAccelData,
+		.getFloatGyroData = MPU9150GetFloatGyroData
 };
 
 uint32_t ui32_temp;
@@ -232,7 +234,7 @@ uint8_t MPU9150Init(void)
 	MPU9150Write(0x25, 0x00);
 	MPU9150Write(0x1a, 0x00);
 	MPU9150Write(0x1b, 0x12);
-	MPU9150Write(0x1c, 0x0a);
+	MPU9150Write(0x1c, 0x02); // 0x02= +-2G, 0x0a = +-4g, 0x12= +-8G, 0x1a= +-16G
 	MPU9150Write(0x24, 0x00);
 
 	uint8_t val1, val2, val3, val4, val5, val6;
@@ -481,5 +483,20 @@ uint8_t MPU9150GetRawGyroData(void)
 		MPU9150.i16_rawGyro[i] <<= 8;
 		MPU9150.i16_rawGyro[i] += MPU9150.ui8_rawGyro[(i << 1) + 1];
 	}
+	return 0;
+}
+
+uint8_t MPU9150GetFloatAccelData(void)
+{
+	int i=0;
+	for (i=0; i<3 ; i++)
+	{
+		MPU9150.accel[i] = MPU9150.i16_rawAccel[i]/(float)16384;
+	}
+
+	return 0;
+}
+uint8_t MPU9150GetFloatGyroData(void)
+{
 	return 0;
 }

@@ -1,7 +1,10 @@
 #define TARGET_IS_TM4C123_RA1		// Required for Direct ROM Calls
 #define DEBUG_LEVEL
+//#define DEBUG_LEVEL_1
+
 #include <stdbool.h>
 #include <stdint.h>
+
 
 #include "inc/hw_types.h"
 #include "inc/hw_gpio.h"
@@ -28,6 +31,10 @@
 uint8_t ConfigureUART(void);
 uint8_t ConfigureSystem(void);
 uint8_t ConfigureI2C(void);
+void ftoa(float, char*);
+
+// Buffer for float to string conversion
+char strBuffer[20];
 
 int main()
 {
@@ -48,6 +55,8 @@ int main()
 		#endif
 
 		MPU9150.getRawAccelData();
+
+		#ifdef DEBUG_LEVEL_1
 		UARTprintf("\nRaw Unsigned -> X: %6d, Y: %6d, Z: %6d",
 						MPU9150.ui16_rawAccel[0],
 						MPU9150.ui16_rawAccel[1],
@@ -57,7 +66,15 @@ int main()
 						MPU9150.i16_rawAccel[0],
 						MPU9150.i16_rawAccel[1],
 						MPU9150.i16_rawAccel[2]);
+		#endif
 
+		MPU9150.getFloatAccelData();
+		ftoa(MPU9150.accel[0], strBuffer);
+		UARTprintf("\nFloat Accel  -> X: %s", strBuffer);
+		ftoa(MPU9150.accel[1], strBuffer);
+		UARTprintf(", Y: %s", strBuffer);
+		ftoa(MPU9150.accel[2], strBuffer);
+		UARTprintf(", Z: %s", strBuffer);
 
 		// set the red LED pin high, others low
 		ROM_GPIOPinWrite(GPIO_PORTF_BASE, LED_RED|LED_GREEN|LED_BLUE, LED_RED|LED_BLUE);
@@ -154,3 +171,48 @@ uint8_t ConfigureUART(void)
 
 	return 0;
 }
+
+//*****************************************************************************
+//
+//! \brief Float to ASCII
+//!
+//! Converts a floating point number to ASCII. Note that buf must be
+//! large enough to hold
+//!
+//! \param f is the floating point number.
+//! \param buf is the buffer in which the resulting string is placed.
+//! \return None.
+//!
+//! \par Example:
+//! ftoa(3.14) returns "3.14"
+//!
+//
+//*****************************************************************************
+void ftoa(float f,char *buf)
+{
+    int pos=0,ix,dp,num;
+    if (f<0)
+    {
+        buf[pos++]='-';
+        f = -f;
+    }
+    dp=0;
+    while (f>=10.0)
+    {
+        f=f/10.0;
+        dp++;
+    }
+    for (ix=1;ix<8;ix++)
+    {
+            num = (int)f;
+            f=f-num;
+            if (num>9)
+                buf[pos++]='#';
+            else
+                buf[pos++]='0'+num;
+            if (dp==0) buf[pos++]='.';
+            f=f*10.0;
+            dp--;
+    }
+}
+
