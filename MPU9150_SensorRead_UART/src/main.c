@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <math.h>
 
 
 #include "inc/hw_types.h"
@@ -32,6 +33,7 @@ uint8_t ConfigureUART(void);
 uint8_t ConfigureSystem(void);
 uint8_t ConfigureI2C(void);
 void ftoa(float, char*);
+float GetAccAngle(void);
 
 // Buffer for float to string conversion
 char strBuffer[20];
@@ -75,6 +77,8 @@ int main()
 		UARTprintf(", Y: %s", strBuffer);
 		ftoa(MPU9150.accel[2], strBuffer);
 		UARTprintf(", Z: %s", strBuffer);
+		ftoa(GetAccAngle(), strBuffer);
+		UARTprintf("\nAngle: %s", strBuffer);
 
 		// set the red LED pin high, others low
 		ROM_GPIOPinWrite(GPIO_PORTF_BASE, LED_RED|LED_GREEN|LED_BLUE, LED_RED|LED_BLUE);
@@ -216,3 +220,9 @@ void ftoa(float f,char *buf)
     }
 }
 
+float GetAccAngle(void) {
+    float r = sqrt(MPU9150.accel[2] * MPU9150.accel[2] + MPU9150.accel[1] * MPU9150.accel[1]);
+    float accAngle = MPU9150.accel[1] / r; //approximates sine ~=theta = y/(srt(y^2 + z^))
+
+    return accAngle;
+}
